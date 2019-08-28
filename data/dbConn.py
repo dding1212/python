@@ -29,13 +29,24 @@ class dbConn():
         "WHERE " + nameCol + "='" + uniqueName + "';"
         return self.__getID_bySQL(sql)
     
+    def getID_byID(self,table,idCol,ID):
+        sql = "SELECT t." + idCol + " AS id\r\n" + \
+        "FROM " + self.schema + "." + table + " t\r\n" + \
+        "WHERE " + idCol + "=" + str(ID) + ";"
+        return self.__getID_bySQL(sql)
+
     def getDF_byID(self,table,idCol,idValue):
         sql = "SELECT *\r\n" + \
         "FROM " + self.schema + "." + table + " t\r\n" + \
         "WHERE " + idCol + "=" + str(idValue) + ";"
         return pd.read_sql_query(sql,self.eg)
     
-    def getID_byDF(self, table, idCol, df):
+    def getID_byDF(self, table, idCol, df, skipCols=[]):
+        if skipCols: # act only if skipCols is not empty
+            if type(skipCols)=='str':
+                df = df.drop(columns=[skipCols])
+            else:
+                df = df.drop(columns=skipCols)
         sql = "SELECT t." + idCol + " AS id\r\n" + \
         "FROM " + self.schema + "." + table +" t\r\n" + \
         "WHERE"
@@ -56,17 +67,20 @@ class dbConn():
              + "ORDER BY t." + idCol + " DESC LIMIT 0, 1"
         return self.__getID_bySQL(sql)
 
-    def sync_byDF(self, table, idCol, df):
+    def sync_byDF(self, table, idCol, df, skipCols=""):
         # if df in db, return the id
         # if df not in db, insert and return the id
         for index, row in df.iterrows():
             #ds is the current row but still in dataframe format
             ds = row.to_frame().transpose() #change data series to dataframe
-            ds_noID = ds.drop(columns = [idCol])
-            ID = self.get_id_byDF(table,idCol,ds_noID)
+            if idCol in ds.columns: 
+                ds_noID = ds.drop(columns = [idCol])
+            else:
+                ds_noID = ds
+            ID = self.getID_byDF(table,idCol,ds_noID,skipCols)
             #print(ID)
             isna = row.isna()
-            if ID != 0 and isna[idCol] == True:
+            if ID != 0 and isna[idCol]==True:
                 df.at[index,idCol] = ID #set ID
             elif ID != 0 and row[idCol] != ID:
                 df.at[index,idCol] = ID # correct ID, normally it shouldn't happen
@@ -76,6 +90,16 @@ class dbConn():
                 df.at[index,idCol] = ID
         # df to be returned has all the updated IDs
         return df
+    
+    def sync_byDF_group(self, table, idCol, df):
+        # the idCol is the unique group id, not the row id
+        id_group = df[idCol][0]
+        if self.getID_byID(table,idCol,id_group)==0:
+            df.to_sql(name=table,con=self.eg,schema=self.schema,if_exists='append',index=False,method='multi')
+            isExist = False
+        else:
+            isExist = True
+        return isExist
     
     def __insert_single(self, table, idCol, df):
         # df is a single line datafram without id
@@ -115,9 +139,11 @@ if __name__ == "__main__":
 
     db = dbConn('PD','test',connPD)
     df = db.getDF_byID('pd_rawtest','rawtest_id',2)
-    ID = db.getID_byDF('pd_rawtest','rawtest_id',df)
+    ID = db.getID_byDF('pd_rawtest','rawtest_id',df,['laser_mw','i_meas_a'])
+    print(ID)
     LastID = db.getLastID('pd_rawtest','rawtest_id')
     maskID = db.getID_byUniqueName('pd_mask','mask_id','mask_name','PH006')
+    try_ID = db.getID_byID('pd_mask','mask_id',100)
     db.close()
 
 
