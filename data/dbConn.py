@@ -11,11 +11,13 @@ class dbConn():
 
     def __init__(self,name,schema,conn):
         self.name = name      #can be any name
-        self.schema = schema  #epi or test
+        self.schema = schema  #epi,test, or laser
         if conn=='epi' or conn=='Epi' or conn=='EPI':
             conn = 'mysql+pymysql://tableau:12tableau34@sqlsvr.solarjunction.local:3306/epi'
-        elif conn=='DB00' or conn=='db00' or conn=='pd' or conn=='PD':
-            conn = 'mysql+pymysql://tableau:12tableau34@192.168.59.30:3306/test'
+        elif conn=='DB00' or conn=='db00' or conn=='pd' or conn=='PD' \
+        or conn=='EEL' or conn=='eel' or conn =='el' \
+        or conn=='VL' or conn=='vl' or conn=='VCSEL':
+             conn = 'mysql+pymysql://tableau:12tableau34@192.168.59.30:3306/'+schema
         
         self.eg = create_engine(conn, echo=False)
     
@@ -85,7 +87,7 @@ class dbConn():
                 ds_noID = ds
             ID = self.getID_byDF(table,idCol,ds_noID,skipCols)
             #print(ID)
-            isna = row.isna()
+            #isna = row.isna()
             if ID != 0 :
                 df.at[index,idCol] = ID #set ID
             elif ID == 0:
