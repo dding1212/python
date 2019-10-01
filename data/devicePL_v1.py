@@ -5,13 +5,12 @@ Created on Mon Sep 30 13:09:25 2019
 @author: dding
 """
 
-import pandas as pd
 import numpy as np
 from dbConn import dbConn
 from scipy import interpolate
 import math
 
-rotation = 0 # degreee, ccw
+rotation = 45 # degrees, cw
 theta = -rotation*math.pi/180
 
 def get_exclusion(exc,pos=2):
@@ -22,7 +21,7 @@ def get_exclusion(exc,pos=2):
 dbPD = dbConn('pd','test','pd')
 dbEpi = dbConn('epi','epi','epi')
 
-wafer_name = 'TGR-734-11-A'
+wafer_name = 'TGR-491-1-A'
 wafer = dbEpi.getDF_byUniqueName('epi_wafer','wafer_name',wafer_name)
 wafer_id = wafer['wafer_id'][0]
 substrate_id = wafer['substrate_id'][0]
