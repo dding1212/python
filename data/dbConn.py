@@ -43,10 +43,34 @@ class dbConn():
         "WHERE " + idCol + "=" + str(ID) + ";"
         return self.__getID_bySQL(sql)
 
-    def getDF_byID(self,table,idCol,idValue):
+    def getDF_byID(self,table,idCol,idValue,limit=0):
         sql = "SELECT *\r\n" + \
         "FROM " + self.schema + "." + table + " t\r\n" + \
-        "WHERE " + idCol + "=" + str(idValue) + ";"
+        "WHERE " + idCol + "=" + str(idValue) 
+        if limit==0:
+            sql = sql + ";"
+        else:
+            sql = sql + "\r\n" + \
+            "ORDER BY t." + idCol + " DESC LIMIT " + str(limit) + ";"
+        #print(sql)
+        return pd.read_sql_query(sql,self.eg)
+    
+    def getDF_byUniqueName(self,table,nameCol,uniqueName):
+        sql = "SELECT *\r\n" + \
+        "FROM " + self.schema + "." + table + "\r\n" + \
+        "WHERE " + nameCol + "='" + uniqueName + "';"
+        return pd.read_sql_query(sql,self.eg)
+    
+    def getDF_bySQL(self,sql):
+        return pd.read_sql_query(sql,self.eg)
+    
+    def getDF_by_ID_joinedTables(self,table1,table2,idJoinCol,idCol,idValue):
+        #idCol is for table1
+        sql = "SELECT *\r\n" + \
+        "FROM " + self.schema + "." + table1 + " t1\r\n" + \
+        "INNER JOIN " + self.schema + "." + table2 + " t2 on " + \
+        "t1." + idJoinCol + "=" "t2." + idJoinCol + "\r\n" + \
+        "WHERE " +idCol + "=" + str(idValue) + ";"
         return pd.read_sql_query(sql,self.eg)
     
     def getID_byDF(self, table, idCol, df, skipCols=[]):
@@ -142,14 +166,17 @@ class dbConn():
 if __name__ == "__main__":
     connEpi = 'mysql+pymysql://tableau:12tableau34@sqlsvr.solarjunction.local:3306/epi'
     connPD = 'mysql+pymysql://tableau:12tableau34@192.168.59.30:3306/test'
-
-    db = dbConn('PD','test',connPD)
-    df = db.getDF_byID('pd_rawtest','rawtest_id',2)
-    ID = db.getID_byDF('pd_rawtest','rawtest_id',df,['laser_mw','i_meas_a'])
-    print(ID)
-    LastID = db.getLastID('pd_rawtest','rawtest_id')
-    maskID = db.getID_byUniqueName('pd_mask','mask_id','mask_name','PH006')
-    try_ID = db.getID_byID('pd_mask','mask_id',100)
+    db = dbConn('epi','epi','epi')
+    pl = db.getDF_by_ID_joinedTables('epi_pl2_meas','epi_pl2_meas_values','pl2_meas_id','wafer_id',38647)
+    #table,idCol,idValue,limit=0
+    pl1 = db.getDF_byID('epi_pl2_meas','wafer_id',38647,limit=1)
+#    db = dbConn('PD','test',connPD)
+#    df = db.getDF_byID('pd_rawtest','rawtest_id',2)
+#    ID = db.getID_byDF('pd_rawtest','rawtest_id',df,['laser_mw','i_meas_a'])
+#    print(ID)
+#    LastID = db.getLastID('pd_rawtest','rawtest_id')
+#    maskID = db.getID_byUniqueName('pd_mask','mask_id','mask_name','PH006')
+#    try_ID = db.getID_byID('pd_mask','mask_id',100)
     db.close()
 
 
