@@ -136,7 +136,7 @@ class pdMask():
 
     
 if __name__ == "__main__":
-    name = "PH009" #verify it before start!!!
+    name = "PH011" #verify it before start!!!
     die_x = 9.6
     die_y = 12.0
     test = pdMask(name,die_x,die_y)
