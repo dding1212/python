@@ -43,16 +43,27 @@ class dbConn():
         "WHERE " + idCol + "=" + str(ID) + ";"
         return self.__getID_bySQL(sql)
 
-    def getDF_byID(self,table,idCol,idValue,limit=0):
+    def getDF_byID(self,table,idCol,idValue,idSort='',limit=0):
         sql = "SELECT *\r\n" + \
         "FROM " + self.schema + "." + table + " t\r\n" + \
         "WHERE " + idCol + "=" + str(idValue) 
-        if limit==0:
+        if limit==0 or idSort=='':
             sql = sql + ";"
         else:
             sql = sql + "\r\n" + \
-            "ORDER BY t." + idCol + " DESC LIMIT " + str(limit) + ";"
+            "ORDER BY t." + idSort + " DESC LIMIT " + str(limit) + ";"
         #print(sql)
+        return pd.read_sql_query(sql,self.eg)
+    
+    def getDF_byIDList(self,table,idcol,idList):
+        sql = "SELECT *\r\n" + \
+        "FROM " + self.schema + "." + table + " t\r\n" + \
+        "WHERE " + idcol + " in (" 
+        condition = ""
+        for i in idList:
+            condition = condition + str(i) + ","
+        condition = condition[:-1]
+        sql = sql + condition + ");"
         return pd.read_sql_query(sql,self.eg)
     
     def getDF_byUniqueName(self,table,nameCol,uniqueName):
@@ -92,6 +103,14 @@ class dbConn():
         sql = sql[:-3] + ";"
         #print(sql)
         return self.__getID_bySQL(sql)
+    
+    def getWaferList_byLotName(self,lotName,stage=310):
+        if self.schema == 'epi':
+            df = self.getDF_byUniqueName('wts_default_view','sjc_lot_number', lotName)
+            df_filtered = df[df['manufacturing_stage_id']==stage]
+            lst_wid = df_filtered['wafer_id'].tolist()
+            lst_wname = df_filtered['wafer_name'].tolist()
+            return lst_wid, lst_wname, df_filtered
     
     def getLastID(self, table, idCol):
         sql = "SELECT t." + idCol + " as id\r\n" \
@@ -167,9 +186,11 @@ if __name__ == "__main__":
     connEpi = 'mysql+pymysql://tableau:12tableau34@sqlsvr.solarjunction.local:3306/epi'
     connPD = 'mysql+pymysql://tableau:12tableau34@192.168.59.30:3306/test'
     db = dbConn('epi','epi','epi')
-    pl = db.getDF_by_ID_joinedTables('epi_pl2_meas','epi_pl2_meas_values','pl2_meas_id','wafer_id',38647)
+    wid,wname,df = db.getWaferList_byLotName('SJC_ENG_421_4-GaAs')
+    
+    #pl = db.getDF_by_ID_joinedTables('epi_pl2_meas','epi_pl2_meas_values','pl2_meas_id','wafer_id',38647)
     #table,idCol,idValue,limit=0
-    pl1 = db.getDF_byID('epi_pl2_meas','wafer_id',38647,limit=1)
+    #pl1 = db.getDF_byID('epi_pl2_meas','wafer_id',38647,limit=1)
 #    db = dbConn('PD','test',connPD)
 #    df = db.getDF_byID('pd_rawtest','rawtest_id',2)
 #    ID = db.getID_byDF('pd_rawtest','rawtest_id',df,['laser_mw','i_meas_a'])
