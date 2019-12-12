@@ -150,6 +150,15 @@ class dbConn():
             isExist = True
         return isExist
     
+    def sync_byDF_grouptime(self,table,idCol,timeCol,df):
+        dt_group = df[timeCol][0]
+        if self.getID_byUniqueName(table,idCol,timeCol,dt_group)==0:
+            df.to_sql(name=table,con=self.eg,schema=self.schema,if_exists='append',index=False,method='multi')
+            isExist = False
+        else:
+            isExist = True
+        return isExist
+    
     def __insert_single(self, table, idCol, df):
         # df is a single line datafram without id
         conn = self.eg.connect()
