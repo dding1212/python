@@ -237,7 +237,7 @@ class detector(DataInterface):
         print('parsing ' + fname)
         test_type,wafer_name,operator,fTime=self.get_info_fname(file)
         df, df_value = self.read_file(file, test_type)
-        if test_type == 'PT' or 'CP':
+        if test_type == 'PT' or test_type == 'CP':
             map_time = fTime
         elif test_type == 'ST':
             map_time = self.get_datetime(df['map_time'][0])
