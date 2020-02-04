@@ -325,7 +325,11 @@ class detector(DataInterface):
 
 
     def read_file(self,file,test_type):
-        if test_type == 'PT' or test_type == 'CP':
+        if test_type == 'CP':
+            df = pd.read_csv(file,index_col=False)
+            df = df.dropna(subset = ['c_pf'])
+            df_values = []
+        elif test_type == 'PT':
             df = pd.read_csv(file,index_col=False)
             df_values = []
         elif test_type == 'ST':

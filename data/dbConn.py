@@ -12,11 +12,11 @@ class dbConn():
     def __init__(self,name,schema,conn):
         self.name = name      #can be any name
         self.schema = schema  #epi,test, or laser
-        if conn=='epi' or conn=='Epi' or conn=='EPI':
+        if conn.lower()=='epi':
             conn = 'mysql+pymysql://tableau:12tableau34@sqlsvr.solarjunction.local:3306/epi'
-        elif conn=='DB00' or conn=='db00' or conn=='pd' or conn=='PD' \
-        or conn=='EEL' or conn=='eel' or conn =='el' \
-        or conn=='VL' or conn=='vl' or conn=='VCSEL':
+        elif conn.lower()=='DB00' or conn.lower()=='pd' \
+        or conn.lower() == 'eel' or conn.lower() =='el' \
+        or conn.lower()=='vl' or conn.lower()=='vcsel':
              conn = 'mysql+pymysql://tableau:12tableau34@192.168.59.30:3306/'+schema
         
         self.eg = create_engine(conn, echo=False)

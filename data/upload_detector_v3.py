@@ -2,7 +2,7 @@
 """
 Created on Tue Jul  9 16:32:25 2019 for TLM
 Revised on 12/12/2019 include detector IV and CV
-Move overlapped methods to parent class
+Move overlapped methods to parent class in DI
 Detector IV data uploading
 @author: dding
 """
