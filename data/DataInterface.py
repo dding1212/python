@@ -422,7 +422,7 @@ class laser(DataInterface):
         if test_type == 'ELV':
             df = pd.read_csv(file,index_col=0,header=None,nrows=10).T
             df = df.drop([2])
-            df_values = pd.read_csv(file,skiprows=12)
+            df_values = pd.read_csv(file,skiprows=11)
         return df, df_values
     
     def get_eel_device_id(self,wafer_id,wpart_id):
