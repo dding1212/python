@@ -12,6 +12,7 @@ from datetime import datetime
 import shutil
 from abc import abstractmethod
 from dbConn import dbConn
+from LIV import LIV
 #Please include dbConn.py file in the same folder!
 
 class DataInterface():
@@ -351,6 +352,7 @@ class detector(DataInterface):
 class laser(DataInterface):
     def __init__(self,folders):
         super().__init__(folders)
+        self.LIV_processor = LIV()
         return
     
     def process_files(self):
@@ -407,6 +409,10 @@ class laser(DataInterface):
                                              'l_mw':list(df_value.L_mW)
                                              })
                 isExist = self.dbLS.sync_byDF_group('liv_meas','liv_id',df_liv_value)
+                
+                #process LIV data
+                self.LIV_processor.process_data_byID(liv_id)
+                
                 if isExist == True:
                     isGood = True
                     reason = "skip"
