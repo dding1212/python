@@ -355,7 +355,7 @@ class laser(DataInterface):
         self.LIV_processor = LIV()
         return
     
-    def process_files(self):
+    def process_files(self,checkID=0):
         path = self.folders['root']
         files=self.get_file_list(path,'csv')
         print('process files')
@@ -363,7 +363,7 @@ class laser(DataInterface):
             for f in files:
                 # folders are upload and failedd folders
                 
-                isGood, reason = self.parse_file(f)
+                isGood, reason = self.parse_file(f,checkID)
                 if isGood == True:
                     self.move_file(f,self.folders['uploaded'])
                 else:
@@ -373,7 +373,7 @@ class laser(DataInterface):
             print("no file to process")
         return 
     
-    def parse_file(self,file):
+    def parse_file(self,file,checkID=0):
         fname,_=self.split_file(file)
         print('parsing ' + fname)
         test_type,wafer_name,device_name,fTime = self.get_info_fname1(file)
@@ -383,6 +383,10 @@ class laser(DataInterface):
             map_id = 0
             wafer_id = df['wafer_id'].iloc[0]
             wpart_id = df['wpart_id'].iloc[0]
+            if checkID==1:
+                newID = self.check_EEL_wpartID(device_name,wpart_id)
+                if newID!=0:
+                    wpart_id = newID
             test_time = fTime
             device_id = self.get_eel_device_id(wafer_id,wpart_id)
             if device_id != 0:
@@ -423,6 +427,33 @@ class laser(DataInterface):
                 isGood = False
                 reason = "no device_id"
         return isGood, reason
+    
+    def check_EEL_wpartID(self, device_name, wpart_id):
+        C,R,X = self.get_EEL_part(device_name)
+        ID = self.get_EEL_wpartID(C,R,X)
+        if ID!=0 and ID!=wpart_id:
+            newID = ID
+        else:
+            newID = 0
+        return newID
+    
+    def get_EEL_part(self, device_name, mask_id=1):
+        name = device_name.split('-')
+        eC = int(name[0])
+        eR = int(name[1])
+        eX = int(name[2])
+        return eC, eR, eX
+    
+    def get_EEL_wpartID(self, eC, eR, eX, mask_id=1):
+        sql = "SELECT m.eel_wpart_id\r\n" + \
+              "FROM laser.v_eel_mask m\r\n" + \
+              "WHERE m.mask_id = "+str(mask_id)+ \
+              " AND m.col = "+str(eC)+ \
+              " AND m.row = "+str(eR)+ \
+              " AND m.x_pos = "+str(eX) + ";"
+        ID = self.dbLS.getID_bySQL_public('eel_wpart_id',sql)
+        return ID
+        
     
     def read_file(self,file,test_type):
         if test_type == 'ELV':
