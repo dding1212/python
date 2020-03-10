@@ -203,7 +203,7 @@ class LIV():
             ith = -1
         else:
             ith = -interception/slope
-            if ith<0:
+            if ith<0 or ith>df_values['i_ma'].max():
                 isFailed = True
                 ith = -1
             else:
@@ -232,7 +232,7 @@ class LIV():
         
         if isFail1==False and isFail2 == False:
             ith = (b1-b2)/(m2-m1)
-            if ith<0:
+            if ith<0 or ith>df_values['i_ma'].max():
                 isFailed = True
                 ith = -1
             else:
@@ -382,7 +382,7 @@ class LIV():
     
 if __name__ == "__main__":
     test = LIV()
-    df, df_values = test.read_data_byID(116)
+    df, df_values = test.read_data_byID(218)
     fig, axLI, axVI, ax3 = test.plot_raw(df_values)
     isFailed1,ith1 = test.get_ith_1(df_values,isplot=1)
     isFailed2,ith2 = test.get_ith_2(df_values,isplot=1)
