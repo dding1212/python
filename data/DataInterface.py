@@ -380,52 +380,75 @@ class laser(DataInterface):
         df, df_value = self.read_file(file, test_type)
 
         if test_type=='ELV':
-            map_id = 0
-            wafer_id = df['wafer_id'].iloc[0]
-            wpart_id = df['wpart_id'].iloc[0]
-            if checkID==1:
-                newID = self.check_EEL_wpartID(device_name,wpart_id)
-                if newID!=0:
-                    wpart_id = newID
+            #smu_id is 1 (K2520 for EEL)
+            map_id = 0 #no wafer mapping
             test_time = fTime
-            device_id = self.get_eel_device_id(wafer_id,wpart_id)
-            if device_id != 0:
+            if wafer_name == 'External':
+                external_id = int(device_name) #same as wpart_id in df
                 df_liv = pd.DataFrame({'liv_id':np.nan,
                                        'recipe_id':df['recipe_id'].iloc[0],
-                                       'device_id':device_id,
+                                       'device_id':external_id,
                                        'map_id':map_id,
                                        'test_time':test_time,
                                        'temperature':df['temperature'].iloc[0],
                                        'assigned_wl_nm':df['wavelength'].iloc[0],
                                        'operator':df['operator'].iloc[0],
-                                       'is_external':0,
+                                       'is_external':1,
                                        'data_status_id':1,
                                        'is_pulse':1,
-                                       'comment':df['comment'].iloc[0],
-                                       'laser_type_id':1
+                                       'laser_type_id':3,
+                                       'liv_sensor_id':df['sensor_id'].iloc[0],
+                                       'liv_smu_id':1,
+                                       'comment':df['comment'].iloc[0]
                                        },index=[0])
-                df_liv = self.dbLS.sync_byDF('liv','liv_id',df_liv)
-                liv_id = df_liv['liv_id'][0]
-                points = len(df_value.index)
-                df_liv_value = pd.DataFrame({'liv_id':[liv_id]*points,
-                                             'i_ma':list(df_value.I_mA),
-                                             'v':list(df_value.V_V),
-                                             'l_mw':list(df_value.L_mW)
-                                             })
-                isExist = self.dbLS.sync_byDF_group('liv_meas','liv_id',df_liv_value)
-                
-                #process LIV data
-                self.LIV_processor.process_data_byID(liv_id)
-                
-                if isExist == True:
-                    isGood = True
-                    reason = "skip"
-                else:
-                    isGood = True
-                    reason = ""
             else:
-                isGood = False
-                reason = "no device_id"
+                wafer_id = df['wafer_id'].iloc[0]
+                wpart_id = df['wpart_id'].iloc[0]
+                if checkID==1:
+                    newID = self.check_EEL_wpartID(device_name,wpart_id)
+                    if newID!=0:
+                        wpart_id = newID
+                device_id = self.get_eel_device_id(wafer_id,wpart_id)
+                if device_id != 0:
+                    df_liv = pd.DataFrame({'liv_id':np.nan,
+                                           'recipe_id':df['recipe_id'].iloc[0],
+                                           'device_id':device_id,
+                                           'map_id':map_id,
+                                           'test_time':test_time,
+                                           'temperature':df['temperature'].iloc[0],
+                                           'assigned_wl_nm':df['wavelength'].iloc[0],
+                                           'operator':df['operator'].iloc[0],
+                                           'is_external':0,
+                                           'data_status_id':1,
+                                           'is_pulse':1,
+                                           'laser_type_id':1,
+                                           'liv_sensor_id':df['sensor_id'].iloc[0],
+                                           'liv_smu_id':1,
+                                           'comment':df['comment'].iloc[0]
+                                           },index=[0])
+            
+            df_liv = self.dbLS.sync_byDF('liv','liv_id',df_liv)
+            liv_id = df_liv['liv_id'][0]
+            points = len(df_value.index)
+            df_liv_value = pd.DataFrame({'liv_id':[liv_id]*points,
+                                         'i_ma':list(df_value.I_mA),
+                                         'v':list(df_value.V_V),
+                                         'l_mw':list(df_value.L_mW)
+                                         })
+            isExist = self.dbLS.sync_byDF_group('liv_meas','liv_id',df_liv_value)
+            
+            #process LIV data
+            self.LIV_processor.process_data_byID(liv_id)
+                
+            if isExist == True:
+                isGood = True
+                reason = "skip"
+            else:
+                isGood = True
+                reason = ""
+        else:
+            isGood = False
+            reason = "no device_id"
         return isGood, reason
     
     def check_EEL_wpartID(self, device_name, wpart_id):
@@ -457,9 +480,9 @@ class laser(DataInterface):
     
     def read_file(self,file,test_type):
         if test_type == 'ELV':
-            df = pd.read_csv(file,index_col=0,header=None,nrows=10).T
+            df = pd.read_csv(file,index_col=0,header=None,nrows=11).T
             df = df.drop([2])
-            df_values = pd.read_csv(file,skiprows=11)
+            df_values = pd.read_csv(file,skiprows=15)
         return df, df_values
     
     def get_eel_device_id(self,wafer_id,wpart_id):

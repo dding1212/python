@@ -203,7 +203,11 @@ class LIV():
             ith = -1
         else:
             ith = -interception/slope
-            isFailed = False
+            if ith<0:
+                isFailed = True
+                ith = -1
+            else:
+                isFailed = False
             if isplot==1:
                 
                 I = df_values['i_ma']
@@ -228,7 +232,11 @@ class LIV():
         
         if isFail1==False and isFail2 == False:
             ith = (b1-b2)/(m2-m1)
-            isFailed = False
+            if ith<0:
+                isFailed = True
+                ith = -1
+            else:
+                isFailed = False
             if isplot==1:
                 I = df_values['i_ma']
                 L = df_values['l_mw']
@@ -374,7 +382,7 @@ class LIV():
     
 if __name__ == "__main__":
     test = LIV()
-    df, df_values = test.read_data_byID(31)
+    df, df_values = test.read_data_byID(116)
     fig, axLI, axVI, ax3 = test.plot_raw(df_values)
     isFailed1,ith1 = test.get_ith_1(df_values,isplot=1)
     isFailed2,ith2 = test.get_ith_2(df_values,isplot=1)
