@@ -57,7 +57,12 @@ class dbConn():
         "FROM " + self.schema + "." + table + " t\r\n" + \
         "WHERE " + idCol + "=" + str(ID) + ";"
         return self.__getID_bySQL(sql)
-
+    
+    def getDF_all(self,table):
+        sql = "SELECT *\r\n" + \
+        "FROM " + self.schema + "." + table + ";"
+        return pd.read_sql_query(sql,self.eg)
+    
     def getDF_byID(self,table,idCol,idValue,idSort='',limit=0):
         sql = "SELECT *\r\n" + \
         "FROM " + self.schema + "." + table + " t\r\n" + \
@@ -136,7 +141,17 @@ class dbConn():
             df_filtered = df[df['manufacturing_stage_id']==stage]
             lst_wid = df_filtered['wafer_id'].tolist()
             lst_wname = df_filtered['wafer_name'].tolist()
-            return lst_wid, lst_wname, df_filtered
+        return lst_wid, lst_wname, df_filtered
+    
+    def getWaferNames_byWaferIDList(self,wafer_id_list):
+        if self.schema == 'epi':
+            df = self.getDF_byIDList('epi_wafer','wafer_id',wafer_id_list)
+        return df['wafer_name']
+    
+    def getWaferName_byWaferID(self,wafer_id):
+        if self.schema == 'epi':
+            df = self.getDF_byID('epi_wafer','wafer_id',wafer_id)
+        return df['wafer_name'].iloc[0]
     
     def getLastID(self, table, idCol):
         sql = "SELECT t." + idCol + " as id\r\n" \
@@ -265,6 +280,29 @@ class dbConn():
         trans.commit()
         conn.close()
         return
+    
+    def truncate_table(self,table):
+        print ('Truncate table ' + table + '! Are you sure?')
+        ui = input()
+        if ui=='y':
+            sql = "TRUNCATE TABLE " + table + ";"
+            self.runSQL(sql)
+        return
+    
+    def getID_bySQL_public(self,idCol,sql):
+        data = pd.read_sql_query(sql,self.eg)
+        if data.empty == True:
+            ID=0
+        else:
+            ID=data[idCol][0]
+        return ID
+    
+    def runSQL(self,sql):
+        conn = self.eg.connect()
+        trans = conn.begin()
+        conn.execute(sql)
+        trans.commit()
+        conn.close()
     
     def __insert_single(self, table, idCol, df):
         # df is a single line datafram without id

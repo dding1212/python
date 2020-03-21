@@ -77,10 +77,14 @@ class LIV():
             check = df_values[df_values['l_mw']>1]
             if check.empty == False:
                 
-                isFailed1,ith1 = self.get_ith_1(df_values)
-                isFailed2,ith2 = self.get_ith_2(df_values)
+                isFailed1,ith1,i_range = self.get_ith_1(df_values)
+                if isFailed1 == False:
+                    isFailed2,ith2 = self.get_ith_2(df_values)
+                else:
+                    isFailed2 = True
+                    ith2 = -1
                 isFailed3,ith3 = self.get_ith_3(df_values)
-                isFailed4,ith4 = self.get_ith_4(df_values)
+                isFailed4,ith4 = self.get_ith_4(df_values,i_range)
                 
                 if isFailed1 == False:
                     df_th1 = self.get_th_data(liv_id,df_values,ith1,method=1)
@@ -173,11 +177,13 @@ class LIV():
                 isFail = True
                 slope = 0
                 interception = 0
+                i_range = 0
             else:
                 isFail = False
                 slope = df_select['slope'].iloc[0]
                 interception = df_select['interception'].iloc[0]
-        return isFail,slope,interception
+                i_range = df_select['i_ma'].iloc[-1]
+        return isFail,slope,interception,i_range
     
     def get_below_tol(self,df_values,tol=1e-4):
         below_tol = df_values[df_values['l_mw']<=tol]
@@ -196,7 +202,7 @@ class LIV():
         # linear fit method
         if df_values['l_mw'].iloc[0] > tol:
             tol = df_values['l_mw'].iloc[0]*100
-        isFail,slope,interception = self.get_above_tol(df_values,tol=tol,r2_min=r2_min)
+        isFail,slope,interception,i_range = self.get_above_tol(df_values,tol=tol,r2_min=r2_min)
         
         if isFail == True:
             isFailed = True
@@ -221,18 +227,18 @@ class LIV():
                 plt.text(0.1,50,s)
                 plt.show()
         
-        return isFailed, ith
+        return isFailed, ith, i_range
     
     def get_ith_2(self,df_values,tol=1e-4,r2_min=0.9995,isplot=0):
         # two-segment fit
         if df_values['l_mw'].iloc[0] > tol:
             tol = df_values['l_mw'].iloc[0]*100
-        isFail1,m1,b1 = self.get_above_tol(df_values,tol=tol,r2_min=r2_min)
+        isFail1,m1,b1,i_range = self.get_above_tol(df_values,tol=tol,r2_min=r2_min)
         isFail2,m2,b2 = self.get_below_tol(df_values,tol=tol)
         
         if isFail1==False and isFail2 == False:
             ith = (b1-b2)/(m2-m1)
-            if ith<0 or ith>df_values['i_ma'].max():
+            if ith<0 or ith>df_values['i_ma'].max() or np.isnan(ith) == True:
                 isFailed = True
                 ith = -1
             else:
@@ -276,7 +282,11 @@ class LIV():
                 y = y_temp[i:]
                 f= interpolate.interp1d(y,x)
                 y1 = pkSE/2.0
-                ith = f(y1).item()
+                try:
+                    ith = f(y1).item()
+                except:
+                    ith = -1
+                    isFailed = True
                 if isplot==1:
                     fig,ax=plt.subplots()
                     ax.plot(I,SE)
@@ -289,11 +299,15 @@ class LIV():
             ith = -1
         return isFailed,ith
     
-    def get_ith_4(self,df_values,isplot=0):
+    def get_ith_4(self,df_values,i_range=0,isplot=0):
         #second derivative
-        
-        I = df_values['i_ma'].values
-        L = df_values['l_mw'].values
+        if i_range>0:
+            df_select = df_values[df_values['i_ma']<=i_range]
+            I = df_select['i_ma'].values
+            L = df_select['l_mw'].values
+        else:
+            I = df_values['i_ma'].values
+            L = df_values['l_mw'].values
         SE = self.get_slope_eff(I,L)
         d2L = self.get_slope_eff(I,SE)
         Ih = np.arange(np.amin(I),np.amax(I),0.1)
@@ -382,12 +396,12 @@ class LIV():
     
 if __name__ == "__main__":
     test = LIV()
-    df, df_values = test.read_data_byID(218)
+    df, df_values = test.read_data_byID(356)
     fig, axLI, axVI, ax3 = test.plot_raw(df_values)
-    isFailed1,ith1 = test.get_ith_1(df_values,isplot=1)
+    isFailed1,ith1,i_range = test.get_ith_1(df_values,isplot=1)
     isFailed2,ith2 = test.get_ith_2(df_values,isplot=1)
     isFailed3,ith3 = test.get_ith_3(df_values,isplot=1)
-    isFailed4,ith4 = test.get_ith_4(df_values,isplot=1)
+    isFailed4,ith4 = test.get_ith_4(df_values,i_range,isplot=1)
     if isFailed1 == False:
         df_th1 = test.get_th_data(1,df_values,ith1,1)
     df_summary = test.get_summary(1,df_values)
